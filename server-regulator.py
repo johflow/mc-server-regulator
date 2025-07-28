@@ -1,6 +1,5 @@
 import subprocess, time, wakeonlan, socket
-LOCAL_MAC_ADDRESS = subprocess.run("ip addr | grep link/ether | awk '{ print $2 }'", shell=True, capture_output=True, text=True).strip()
-LOCAL_IP = subprocess.run("ip addr | grep "inet 192" | awk '{ print $2 }'", shell=True, capture_output=True, text=True).strip().split("/")[0]
+LOCAL_MAC_ADDRESS = subprocess.run("ip addr | grep link/ether | awk '{ print $2 }'", shell=True, capture_output=True, text=True).stdout.strip()
 SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
 
 
@@ -19,7 +18,7 @@ def spoof_server_mac():
 def main():
     spoof_server_mac()
     socket_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket_tcp.bind((LOCAL_IP, 25565))
+    socket_tcp.bind(("0.0.0.0", 25565))
     socket_tcp.listen()
     while True:
         try:

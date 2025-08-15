@@ -13,9 +13,8 @@ SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
 SERVER_PORT = 25565
 SERVER_IP = "192.168.1.72"
 COOLDOWN_PERIOD = 30
-SERVER_BOOT_PERIOD = 120
 TIMEOUT_PERIOD = 30
-LISTEN_TIMEOUT = 60  # how long wait_and_listen waits before giving up
+SERVER_BOOT_PERIOD = 300
 SPOOFING_SERVER = False
 
 
@@ -51,47 +50,26 @@ def server_awake(timeout=TIMEOUT_PERIOD) -> bool:
             return False
 
 
-def wait_and_listen() -> bool:
-    """Return True if a connection was accepted, False on timeout/error."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.bind(("0.0.0.0", SERVER_PORT))
-            s.listen()
-            s.settimeout(LISTEN_TIMEOUT)
-            print("Listener active, waiting for a connection...", flush=True)
-
-            connection, address = s.accept()
-            connection.close()
-            print(f"Connection from {address}. Waking server.", flush=True)
-            return True
-        except socket.timeout:
-            print("Listener timed out, retrying...", flush=True)
-            return False
-        except Exception as e:
-            print(f"An error occurred: {e}", flush=True)
-            return False
-
-def on_login_attempt(login_packet):
-    player_name = login_packet.username
-    print(f"Player '{player_name}' is attemting to log in.")
-    SPOOFING_SERVER = False
-    reason_message = {
-        "text": "You've woken the server! Please try again in 2 minutes."
-    }
-
-    disconnect_packet = clientbound.login.DisconnectPacket(json_data=JSON.dump(readon_message))
-
-    connection.write_packet(disconnect_packet)
-
-
-
 def handle_new_player_connection(connection):
-    print(f"A new client has connected from address: {connection.address}."
+    print(f"A new client has connected from address: {connection.address}.")
+    
+    def on_login_attempt(login_packet):
+        global SPOOFING_SERVER
+        player_name = login_packet.username
+        print(f"Player '{player_name}' is attempting to log in.")
+        reason_message = {
+            "text": "You've woken the server! Please try again in 2 minutes."
+        }
+
+        disconnect_packet = clientbound.login.DisconnectPacket(json_data=JSON.dump(reason_message))
+        connection.write_packet(disconnect_packet)
+        SPOOFING_SERVER = False
+
     connection.register_packet_listener(on_login_attempt, serverbound.login.LoginStartPacket)
 
 
 def main():
-    server = Server("0.0.0.0", 25565)
+    server = Server("0.0.0.0", SERVER_PORT)
     server.register_join_handler(handle_new_player_connection)
     try:
         while True:
@@ -101,11 +79,16 @@ def main():
                 SPOOFING_SERVER = True
                 while SPOOFING_SERVER:
                     time.sleep(1)
+                server.stop()
                 wake_and_restore()
+                boot_start_time = time.time()
                 while not server_awake(timeout=5):  # faster polling while booting
+                    if time.time() - boot_start_time > SERVER_BOOT_PERIOD:
+                        print(f"Server failed to start within {SERVER_BOOT_PERIOD} seconds!")
+                        break
                     time.sleep(5)
             else:
-          time.sleep(COOLDOWN_PERIOD)
+                time.sleep(COOLDOWN_PERIOD)
     finally:
         # Always restore MAC on exit
         restore_original_mac()

@@ -3,6 +3,11 @@ import time
 import wakeonlan
 import socket
 import sys
+from minecraft.networking.server import Server
+from minecraft.networking.packets import serverbound
+from minecraft.networking.packets import clientbound
+from minecraft.networking.types import JSON
+
 
 SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
 SERVER_PORT = 25565
@@ -11,6 +16,7 @@ COOLDOWN_PERIOD = 30
 SERVER_BOOT_PERIOD = 120
 TIMEOUT_PERIOD = 30
 LISTEN_TIMEOUT = 60  # how long wait_and_listen waits before giving up
+SPOOFING_SERVER = False
 
 
 def restore_original_mac():
@@ -65,22 +71,41 @@ def wait_and_listen() -> bool:
             print(f"An error occurred: {e}", flush=True)
             return False
 
+def on_login_attempt(login_packet):
+    player_name = login_packet.username
+    print(f"Player '{player_name}' is attemting to log in.")
+    SPOOFING_SERVER = False
+    reason_message = {
+        "text": "You've woken the server! Please try again in 2 minutes."
+    }
+
+    disconnect_packet = clientbound.login.DisconnectPacket(json_data=JSON.dump(readon_message))
+
+    connection.write_packet(disconnect_packet)
+
+
+
+def handle_new_player_connection(connection):
+    print(f"A new client has connected from address: {connection.address}."
+    connection.register_packet_listener(on_login_attempt, serverbound.login.LoginStartPacket)
+
 
 def main():
+    server = Server("0.0.0.0", 25565)
+    server.register_join_handler(handle_new_player_connection)
     try:
         while True:
             if not server_awake():
                 spoof_server_mac()
-                got_connection = wait_and_listen()
-                if got_connection:
-                    wake_and_restore()
-                    while not server_awake(timeout=5):  # faster polling while booting
-                        time.sleep(5)
-                else:
-                    # No incoming connection — restore MAC but do NOT wake the server.
-                    restore_original_mac()
+                server.start()
+                SPOOFING_SERVER = True
+                while SPOOFING_SERVER:
+                    time.sleep(1)
+                wake_and_restore()
+                while not server_awake(timeout=5):  # faster polling while booting
+                    time.sleep(5)
             else:
-                time.sleep(COOLDOWN_PERIOD)
+          time.sleep(COOLDOWN_PERIOD)
     finally:
         # Always restore MAC on exit
         restore_original_mac()

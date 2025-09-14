@@ -86,17 +86,24 @@ def login_attempted() -> bool:
             print("Precise listener active, waiting for a JOIN attempt...", flush=True)
 
             connection, address = s.accept()
+            print("Connection made!", flush=True)
             with connection:
-                packet_length = recv_vlq_bytes(connection)
-                packet_id = recv_vlq_bytes(connection)
-                client_protocol = recv_vlq_bytes(connection)
-                client_address_length = recv_vlq_bytes(connection)
-                client_address = recv_exact(connection, client_address_length)
-                client_connection_port = recv_exact(connection, 2)
-                client_connection_reason = recv_vlq_bytes(connection)
-                if client_connection_reason == 2:
-                    send_disconnect_packet(connection)
-                    return True
+                try:
+                    packet_length = recv_vlq_bytes(connection)
+                    packet_id = recv_vlq_bytes(connection)
+                    client_protocol = recv_vlq_bytes(connection)
+                    client_address_length = recv_vlq_bytes(connection)
+                    client_address = recv_exact(connection, client_address_length)
+                    client_connection_port = recv_exact(connection, 2)
+                    client_connection_reason = recv_vlq_bytes(connection)
+                    print(client_connection_reason, flush=True)
+                    if client_connection_reason == 2:
+                        send_disconnect_packet(connection)
+                        print("Disconnect packet sent!", flush=True)
+                        return True
+                except (IOError, OSError) as e:
+                    print(f"Handshake failed early: {e}", flush=True)
+                    return False
         except socket.timeout:
             print("Connection timed out", flush=True)
             return False
@@ -151,3 +158,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

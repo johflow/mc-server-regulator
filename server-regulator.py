@@ -89,7 +89,7 @@ def login_attempted() -> bool:
             print("Connection made!", flush=True)
             with connection:
                 try:
-                    packet_length = recv_vlq_bytes(connection)
+                    packet_length = recv_vlq_bytes(connection) #Grabbing these could hang the program permanently depending on if connection terminates or terminates in a way that stops this
                     packet_id = recv_vlq_bytes(connection)
                     client_protocol = recv_vlq_bytes(connection)
                     client_address_length = recv_vlq_bytes(connection)
@@ -145,7 +145,7 @@ def main():
                         time.sleep(5)
                         break
                 restore_original_mac()
-                while not server_awake():
+                while not server_awake(): #If wakeonlan packet fails this hangs infinitely
                     time.sleep(5)
             else:
                 time.sleep(COOLDOWN_PERIOD)

@@ -131,6 +131,12 @@ def encode_varint(value):
             break
     return out
 
+def wait_for_server_boot():
+    i = 0
+    while not server_awake and i < 60:
+        i += 1
+        time.sleep(5)
+
 
 
 # --- MODIFIED: Main function now calls the new listener name ---
@@ -145,8 +151,7 @@ def main():
                         time.sleep(5)
                         break
                 restore_original_mac()
-                while not server_awake(): #If wakeonlan packet fails this hangs infinitely
-                    time.sleep(5)
+                wait_for_server_boot()
             else:
                 time.sleep(COOLDOWN_PERIOD)
     finally:

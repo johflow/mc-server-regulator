@@ -57,7 +57,7 @@ def recv_exact(conn, n):
 
 
 def recv_vlq_bytes(conn):
-    num_bytes = 0
+    num_bytes = 0 #Add socket timeout for conn to prevent infinite hangs. Add maximum number of bytes to read from.
     another_byte = True
     value = 0
 
@@ -90,7 +90,7 @@ def login_attempted() -> bool:
             with connection:
                 try:
                     packet_length = recv_vlq_bytes(connection) #Grabbing these could hang the program permanently depending on if connection terminates or terminates in a way that stops this
-                    packet_id = recv_vlq_bytes(connection)
+                    packet_id = recv_vlq_bytes(connection) # Try to figure out a good parser that makes use of the packet length
                     client_protocol = recv_vlq_bytes(connection)
                     client_address_length = recv_vlq_bytes(connection)
                     client_address = recv_exact(connection, client_address_length)

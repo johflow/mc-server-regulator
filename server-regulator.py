@@ -4,6 +4,7 @@ import wakeonlan
 import socket
 import sys
 import json
+import io
 
 # --- Constants ---
 SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
@@ -46,32 +47,31 @@ def server_awake(timeout=TIMEOUT_PERIOD) -> bool:
             return False
 
 
-def recv_exact(conn, n):
-    data = bytearray()
-    while len(data) < n:
-        new_bytes = conn.recv(n - len(data))
-        if not new_bytes:
-            raise IOError("connection closed")
-        data.extend(new_bytes)
-    return bytes(data)
+def safe_read(stream, n):
+    data = stream.read(n)
+    if not data or len(data) != n:
+        raise IOError("Stream ended unexpectedly!")
+    return data
 
 
-def recv_vlq_bytes(conn):
-    num_bytes = 0 #Add socket timeout for conn to prevent infinite hangs. Add maximum number of bytes to read from.
+def get_vlq_bytes(stream):
+    num_bytes = 0
     another_byte = True
-    value = 0
+    data = 0
 
     while another_byte:
-        byte = recv_exact(conn, 1)
+        byte = safe_read(stream, 1)
         byte_value = byte[0]
 
-        var_int_piece = byte_value & 0x7f
+        vlq_data = byte_value & 0x7f
         another_byte = (byte_value & 0x80) != 0
 
-        value |= var_int_piece << (7 * num_bytes)
+        data |= vlq_data << (7 * num_bytes)
         num_bytes += 1
+        if num_bytes > 5:
+            raise ValueError(f"VLQ is longer than 5 bytes & shouldn't be!")
 
-    return value 
+    return data 
 
 
 
@@ -87,15 +87,20 @@ def login_attempted() -> bool:
 
             connection, address = s.accept()
             print("Connection made!", flush=True)
+            connection.settimeout(5)
             with connection:
                 try:
-                    packet_length = recv_vlq_bytes(connection) #Grabbing these could hang the program permanently depending on if connection terminates or terminates in a way that stops this
-                    packet_id = recv_vlq_bytes(connection) # Try to figure out a good parser that makes use of the packet length
-                    client_protocol = recv_vlq_bytes(connection)
-                    client_address_length = recv_vlq_bytes(connection)
-                    client_address = recv_exact(connection, client_address_length)
-                    client_connection_port = recv_exact(connection, 2)
-                    client_connection_reason = recv_vlq_bytes(connection)
+                    socket_stream = connection.makefile('rb')
+                    packet_length = get_vlq_bytes(socket_stream) #Grabbing these could hang the program permanently depending on if connection terminates or terminates in a way that stops this
+                    packet_data = safe_read(socket_stream, packet_length)
+                    stream_packet_data = io.BytesIO(packet_data)
+
+                    packet_id = get_vlq_bytes(stream_packet_data) # Try to figure out a good parser that makes use of the packet length
+                    client_protocol = get_vlq_bytes(stream_packet_data)
+                    client_address_length = get_vlq_bytes(stream_packet_data)
+                    client_address = safe_read(stream_packet_data, client_address_length)
+                    client_connection_port = safe_read(stream_packet_data, 2)
+                    client_connection_reason = get_vlq_bytes(stream_packet_data)
                     print(client_connection_reason, flush=True)
                     if client_connection_reason == 2:
                         send_disconnect_packet(connection)
@@ -131,9 +136,9 @@ def encode_varint(value):
             break
     return out
 
-def wait_for_server_boot():
+def wait_for_server_boot(): #Fix magic numbers
     i = 0
-    while not server_awake and i < 60:
+    while not server_awake() and i < 60:
         i += 1
         time.sleep(5)
 

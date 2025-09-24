@@ -5,6 +5,7 @@ import socket
 import sys
 import json
 import io
+import threading
 
 # --- Constants ---
 SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
@@ -86,16 +87,16 @@ def login_attempted() -> bool:
             print("Precise listener active, waiting for a JOIN attempt...", flush=True)
 
             connection, address = s.accept()
-            print("Connection made!", flush=True)
+            print(f"Connection made with {address}!", flush=True)
             connection.settimeout(5)
             with connection:
                 try:
                     socket_stream = connection.makefile('rb')
-                    packet_length = get_vlq_bytes(socket_stream) #Grabbing these could hang the program permanently depending on if connection terminates or terminates in a way that stops this
+                    packet_length = get_vlq_bytes(socket_stream) 
                     packet_data = safe_read(socket_stream, packet_length)
                     stream_packet_data = io.BytesIO(packet_data)
 
-                    packet_id = get_vlq_bytes(stream_packet_data) # Try to figure out a good parser that makes use of the packet length
+                    packet_id = get_vlq_bytes(stream_packet_data)
                     client_protocol = get_vlq_bytes(stream_packet_data)
                     client_address_length = get_vlq_bytes(stream_packet_data)
                     client_address = safe_read(stream_packet_data, client_address_length)

@@ -7,17 +7,24 @@ import json
 import io
 import threading
 
-# --- Constants ---
 SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
 SERVER_PORT = 25565
 SERVER_IP = "192.168.1.72"
+PI_IP = "192.168.1.64"
 COOLDOWN_PERIOD = 30
 TIMEOUT_PERIOD = 30
 SERVER_BOOT_PERIOD = 300
 LISTEN_TIMEOUT = 60
 CUSTOM_KICK_MESSAGE = "§eThe server is waking up... §aPlease try again in 2 minutes!"
 
-# --- Helper Functions (unchanged, except for the new _read_varint_from_socket) ---
+
+def restore_original_state():
+    restore_original_mac()
+    restore_original_arp()
+
+def restore_original_arp():
+    subprocess.run(["sudo", "arping", "-A", "-c", "3", "-I", "eth0", PI_IP])
+    subprocess.run(["sudo", "arping", "-U", "-c", "3", "-I", "eth0", "-s", SERVER_MAC_ADDRESS, SERVER_IP])
 
 def restore_original_mac():
     subprocess.run(["sudo", "ip", "link", "set", "eth0", "down"])
@@ -145,7 +152,6 @@ def wait_for_server_boot(): #Fix magic numbers
 
 
 
-# --- MODIFIED: Main function now calls the new listener name ---
 def main():
     try:
         while True:
@@ -156,7 +162,7 @@ def main():
                         wakeonlan.send_magic_packet(SERVER_MAC_ADDRESS)
                         time.sleep(5)
                         break
-                restore_original_mac()
+                restore_original_state()
                 wait_for_server_boot()
             else:
                 time.sleep(COOLDOWN_PERIOD)

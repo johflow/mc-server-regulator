@@ -45,7 +45,7 @@ def spoof_server_mac():
 
 def server_awake(timeout=TIMEOUT_PERIOD) -> bool:
     return subprocess.run(
-            ['ping', param, '1', host], 
+            ['ping', '-c', '1', SERVER_IP], 
             stdout=subprocess.DEVNULL, 
             stderr=subprocess.DEVNULL
         ).returncode == 0

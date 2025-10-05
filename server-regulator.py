@@ -44,16 +44,11 @@ def spoof_server_mac():
     print(f"Spoofed MAC address to {SERVER_MAC_ADDRESS}.", flush=True)
 
 def server_awake(timeout=TIMEOUT_PERIOD) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.settimeout(timeout)
-            s.connect((SERVER_IP, SERVER_PORT))
-            print("Server is online.", flush=True)
-            return True
-        except (socket.timeout, ConnectionRefusedError, OSError):
-            print("Server is offline.", flush=True)
-            return False
-
+    return subprocess.run(
+            ['ping', param, '1', host], 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
+        ).returncode == 0
 
 def safe_read(stream, n):
     data = stream.read(n)

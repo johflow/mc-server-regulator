@@ -79,7 +79,7 @@ def get_vlq_bytes(stream):
 
 
 
-def login_attempted() -> bool:
+def login_attempted() -> bool: #clean up 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -162,7 +162,7 @@ def main():
             else:
                 time.sleep(COOLDOWN_PERIOD)
     finally:
-        restore_original_mac()
+        restore_original_state()
         print("Exited cleanly.", flush=True)
 
 

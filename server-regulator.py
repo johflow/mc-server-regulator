@@ -18,7 +18,7 @@ LISTEN_TIMEOUT = 60
 CUSTOM_KICK_MESSAGE = "§eThe server is waking up... §aPlease try again in 2 minutes!"
 
 def add_ip_alias():
-    subprocess.run(["sudo", "ip", "addr", SERVER_IP + "/24", "dev", "eth0"])
+    subprocess.run(["sudo", "ip", "addr", "add", SERVER_IP + "/24", "dev", "eth0"])
     subprocess.run(["sudo", "arping", "-U", "-c", "3", "-I", "eth0", SERVER_IP])
 
 def remove_ip_alias():
@@ -150,7 +150,7 @@ def main():
                         wake_server()
                         time.sleep(5)
                         break
-                    remove_ip_alias()
+                remove_ip_alias()
                 wait_for_server_boot()
             else:
                 time.sleep(COOLDOWN_PERIOD)

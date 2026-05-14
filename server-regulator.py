@@ -17,25 +17,16 @@ SERVER_BOOT_PERIOD = 300
 LISTEN_TIMEOUT = 60
 CUSTOM_KICK_MESSAGE = "§eThe server is waking up... §aPlease try again in 2 minutes!"
 
+def add_ip_alias():
+    subprocess.run(["sudo", "ip", "addr", SERVER_IP + "/24", "dev", "eth0"])
+    subprocess.run(["sudo", "arping", "-U", "-c", "3", "-I", "eth0", SERVER_IP])
 
-def restore_original_state():
-    restore_original_mac()
-    restore_original_arp()
+def remove_ip_alias():
+    subprocess.run(["sudo", "ip", "addr", "del", SERVER_IP + "/24", "dev", "eth0"])
 
-def restore_original_arp():
-    subprocess.run(["sudo", "arping", "-A", "-c", "3", "-I", "eth0", PI_IP])
-    subprocess.run(["sudo", "arping", "-U", "-c", "3", "-I", "eth0", "-s", SERVER_MAC_ADDRESS, SERVER_IP])
-
-def restore_original_mac():
-    subprocess.run(["sudo", "ip", "link", "set", "eth0", "down"])
-    subprocess.run(["sudo", "macchanger", "-p", "eth0"])
-    subprocess.run(["sudo", "ip", "link", "set", "eth0", "up"])
-    print("Original MAC address restored.", flush=True)
-
-def wake_and_restore():
+def wake_server():
     wakeonlan.send_magic_packet(SERVER_MAC_ADDRESS)
     print("Sent wake on lan packet.", flush=True)
-    restore_original_mac()
 
 def spoof_server_mac():
     subprocess.run(["sudo", "ip", "link", "set", "eth0", "down"])
@@ -43,12 +34,14 @@ def spoof_server_mac():
     subprocess.run(["sudo", "ip", "link", "set", "eth0", "up"])
     print(f"Spoofed MAC address to {SERVER_MAC_ADDRESS}.", flush=True)
 
-def server_awake(timeout=TIMEOUT_PERIOD) -> bool:
-    return subprocess.run(
-            ['ping', '-c', '1', SERVER_IP], 
-            stdout=subprocess.DEVNULL, 
-            stderr=subprocess.DEVNULL
-        ).returncode == 0
+def server_awake() -> bool:
+    try:
+        result = subprocess.run(["sudo", "arping", "-c", "1", "-w", "2", "-I", "eth0",
+                                 SERVER_IP], capture_output=True, text=True)
+        return SERVER_MAC_ADDRESS.lower() in result.stdout.lower()
+    except Exception as e:
+        print(f"Error checking server state: {e}", flush=True)
+        return False
 
 def safe_read(stream, n):
     data = stream.read(n)
@@ -151,18 +144,18 @@ def main():
     try:
         while True:
             if not server_awake():
-                spoof_server_mac()
+                add_ip_alias()
                 while not server_awake():
                     if login_attempted():
-                        wakeonlan.send_magic_packet(SERVER_MAC_ADDRESS)
+                        wake_server()
                         time.sleep(5)
                         break
-                restore_original_state()
+                    remove_ip_alias()
                 wait_for_server_boot()
             else:
                 time.sleep(COOLDOWN_PERIOD)
     finally:
-        restore_original_state()
+        remove_ip_alias()
         print("Exited cleanly.", flush=True)
 
 

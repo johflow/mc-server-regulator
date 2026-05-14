@@ -1,0 +1,12 @@
+[Unit]
+Description=Minecraft Gatekeeper Service
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=gal
+Restart=always
+WorkingDirectory=/opt/mc-server-regulator/
+ExecStart=/opt/mc-server-regulator/venv/bin/python /opt/mc-server-regulator/pi-regulator.py

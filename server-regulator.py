@@ -1,6 +1,6 @@
 import subprocess, os, time
 
-TIMESTAMP_FILE_PATH = "/home/gal/tools/server-regulator/TIMESTAMP_FILE"
+TIMESTAMP_FILE_PATH = "/run/mc-server-regulator-timestamp"
 
 def get_string_from_file(path):
     with open(path, 'r') as file:
@@ -37,7 +37,6 @@ def main():
             elapsed_time = time.time() - int(get_string_from_file(TIMESTAMP_FILE_PATH))
             print(elapsed_time/60, " minutes of inactivity logged.", flush=True)
             if elapsed_time >= 1800: 
-                os.remove(TIMESTAMP_FILE_PATH)
                 print("Shutting down due to inactivity.", flush=True)
                 subprocess.run(["sudo", "poweroff"])
         else:

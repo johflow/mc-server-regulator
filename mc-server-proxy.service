@@ -8,5 +8,5 @@ WantedBy=multi-user.target
 [Service]
 User=gal
 Restart=always
-WorkingDirectory=/opt/mc-server-regulator/
-ExecStart=/opt/mc-server-regulator/venv/bin/python /opt/mc-server-regulator/pi-regulator.py
+WorkingDirectory=/opt/mc-server-proxy/
+ExecStart=/opt/mc-server-regulator/venv/bin/python /opt/mc-server-proxy/server-proxy.py

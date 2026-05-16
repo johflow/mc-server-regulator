@@ -1,48 +1,64 @@
 #!/bin/bash
+set -e
+set -u
+
 PROXY_SCRIPT_NAME="server-proxy.py"
 PROXY_SERVICE_NAME="mc-server-proxy.service"
-PROXY_SCRIPT_INSTALL_DIR="/opt/mc-server-proxy/"
-PROXY_SERVICE_INSTALL_DIR="/etc/systemd/system/"
+PROXY_SCRIPT_INSTALL_DIR="/opt/mc-server-proxy"
+PROXY_SERVICE_INSTALL_DIR="/etc/systemd/system"
 
 SERVER_SCRIPT_NAME="server-regulator.py"
 SERVER_SCRIPT_INSTALL_DIR="/opt/mc-server-regulator"
 
+if [[ "$EUID" -ne 0 ]]; then
+  echo "Please run this script as root (use sudo)."
+  exit 1
+fi
+
 if ! command -v apt &>/dev/null; then
   echo "The system is not using apt."
-  exit 0
+  exit 1
 fi
 
 if [[ "$#" -lt 1 || "$1" != "proxy" && "$1" != "server" ]]; then
-  echo "Try \"sudo ./install.sh <proxy || server>\""
-  exit 0
+  echo "Try \" ./install.sh <proxy || server>\""
+  exit 1
 fi
 
 if [[ "$1" = "proxy" ]]; then
-  sudo apt update
-  sudo apt install -y python3 python3-venv
+  apt update
+  apt install -y python3 python3-venv
 
-  sudo mkdir -p "$PROXY_SCRIPT_INSTALL_DIR"
-  sudo cp "$PROXY_SCRIPT_NAME" "$PROXY_SCRIPT_INSTALL_DIR" # do I need to do permission setting for the script in /opt or is it automatic?
-  sudo python3 -m venv "$PROXY_SCRIPT_INSTALL_DIR/venv"
-  sudo "$PROXY_SCRIPT_ISNTALL_DIR/venv/bin/pip" install -r requirements.txt
+  mkdir -p "$PROXY_SCRIPT_INSTALL_DIR"
+  cp "$PROXY_SCRIPT_NAME" "$PROXY_SCRIPT_INSTALL_DIR/"
+  chown root:root "$PROXY_SCRIPT_INSTALL_DIR/$PROXY_SCRIPT_NAME"
+  chmod 644 "$PROXY_SCRIPT_INSTALL_DIR/$PROXY_SCRIPT_NAME"
+  python3 -m venv "$PROXY_SCRIPT_INSTALL_DIR/venv"
+  "$PROXY_SCRIPT_INSTALL_DIR/venv/bin/pip" install -r requirements.txt
 
-  sudo mkdir -p "$PROXY_SERVICE_INSTALL_DIR"
-  sudo cp "$PROXY_SERVICE_NAME" "$PROXY_SERVICE_INSTALL_DIR"
-  sudo chown root:root "$PROXY_SERVICE_INSTALL_DIR$PROXY_SERVICE_NAME"
-  sudo chmod 644 "$PROXY_SERVICE_INSTALL_DIR$PROXY_SERVICE_NAME"
-  sudo systemctl daemon-reload
-  sudo systemctl enable "$PROXY_SERVICE_NAME"
-  sudo systemctl start "$PROXY_SERVICE_NAME"
+  mkdir -p "$PROXY_SERVICE_INSTALL_DIR"
+  cp "$PROXY_SERVICE_NAME" "$PROXY_SERVICE_INSTALL_DIR/"
+  chown root:root "$PROXY_SERVICE_INSTALL_DIR/$PROXY_SERVICE_NAME"
+  chmod 644 "$PROXY_SERVICE_INSTALL_DIR/$PROXY_SERVICE_NAME"
+  systemctl daemon-reload
+  systemctl enable "$PROXY_SERVICE_NAME"
+  systemctl start "$PROXY_SERVICE_NAME"
 
 elif [[ "$1" = "server" ]]; then
-  sudo apt update
-  sudo apt install -y python3
+  apt update
+  apt install -y python3
 
-  sudo mkdir -p "$SERVER_SCRIPT_INSTALL_DIR"
-  sudo cp "$SERVER_SCRIPT_NAME" "$SERVER_SCRIPT_INSTALL_DIR"
-  (
-    crontab -l 2>/dev/null
-    echo "*/5 * * * * sudo /home/gal/tools/server-regulator/venv/bin/python /home/gal/tools/server-regulator/server-regulator.py >> /home/gal/tools/server-regulator/regulator.log 2>&1"
-  ) | crontab -
-
+  mkdir -p "$SERVER_SCRIPT_INSTALL_DIR"
+  cp "$SERVER_SCRIPT_NAME" "$SERVER_SCRIPT_INSTALL_DIR/"
+  if ! crontab -l 2>/dev/null | grep -q "$SERVER_SCRIPT_NAME"; then
+    echo "Adding cron job..."
+    (
+      crontab -l 2>/dev/null
+      echo "*/5 * * * * /usr/bin/python3 $SERVER_SCRIPT_INSTALL_DIR/$SERVER_SCRIPT_NAME >> /var/log/mc-regulator.log 2>&1"
+    ) | crontab -
+  else
+    echo "Cron job already exists. Skipping."
+  fi
 fi
+
+exit 0

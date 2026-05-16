@@ -2,13 +2,12 @@
 set -e
 set -u
 
-PROXY_SCRIPT_NAME="server-proxy.py"
-PROXY_SERVICE_NAME="mc-server-proxy.service"
-PROXY_SCRIPT_INSTALL_DIR="/opt/mc-server-proxy"
-PROXY_SERVICE_INSTALL_DIR="/etc/systemd/system"
+if [[ ! -f "config.env" ]]; then
+  echo "ERROR: config.env file not found! Please create it."
+  exit 1
+fi
 
-SERVER_SCRIPT_NAME="server-regulator.py"
-SERVER_SCRIPT_INSTALL_DIR="/opt/mc-server-regulator"
+source config.env
 
 if [[ "$EUID" -ne 0 ]]; then
   echo "Please run this script as root (use sudo)."

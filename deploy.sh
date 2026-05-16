@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 if [[ ! -f "config.env" ]]; then
   echo "ERROR: config.env file not found! Please create it."
   exit 1
@@ -19,17 +21,16 @@ fi
 
 if [[ "$1" = "proxy" ]]; then
   echo "Deploying $PROXY_SCRIPT_NAME to $PROXY_SCRIPT_INSTALL_DIR"
-  sudo cp "$PROXY_SCRIPT_NAME" "$PROXY_SCRIPT_INSTALL_DIR/"
+  cp "$PROXY_SCRIPT_NAME" "$PROXY_SCRIPT_INSTALL_DIR/"
   echo "Deploying $PROXY_SERVICE_NAME to $PROXY_SERVICE_INSTALL_DIR"
-  cp "$PROXY_SERVICE_NAME" "$PROXY_SERVICE_INSTALL_DIR/"
-  sudo systemctl restart mc-gatekeeper.service
+  sed -e "s|__INSTALL_DIR__|${PROXY_SCRIPT_INSTALL_DIR}|g" \
+    -e "s|__SCRIPT_NAME__|${PROXY_SCRIPT_NAME}|g" \
+    "$PROXY_SERVICE_NAME.template" >"$PROXY_SERVICE_INSTALL_DIR/$PROXY_SERVICE_NAME"
+  systemctl daemon-reload
+  systemctl restart "$PROXY_SERVICE_NAME"
   echo "Service restarted. Current Status:"
-  sudo systemctl status mc-gatekeeper.service
-
+  systemctl status "$PROXY_SERVICE_NAME"
 elif [[ "$1" = "server" ]]; then
-  echo "Deploying to /opt/mc-server-regulator..."
+  echo "Deploying $SERVER_SCRIPT_NAME to $SERVER_SCRIPT_INSTALL_DIR"
   cp "$SERVER_SCRIPT_NAME" "$SERVER_SCRIPT_INSTALL_DIR/"
-  sudo systemctl restart mc-gatekeeper.service
-  echo "Service restarted. Current Status:"
-  sudo systemctl status mc-gatekeeper.service
 fi

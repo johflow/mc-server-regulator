@@ -1,0 +1,13 @@
+[Unit]
+Description=Minecraft Gatekeeper Proxy
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=__INSTALL_DIR__
+ExecStart=__INSTALL_DIR__/venv/bin/python __INSTALL_DIR__/__SCRIPT_NAME__
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

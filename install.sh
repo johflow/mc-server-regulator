@@ -1,6 +1,5 @@
 #!/bin/bash
-set -e
-set -u
+set -euo pipefail
 
 if [[ ! -f "config.env" ]]; then
   echo "ERROR: config.env file not found! Please create it."
@@ -36,7 +35,9 @@ if [[ "$1" = "proxy" ]]; then
   "$PROXY_SCRIPT_INSTALL_DIR/venv/bin/pip" install -r requirements.txt
 
   mkdir -p "$PROXY_SERVICE_INSTALL_DIR"
-  cp "$PROXY_SERVICE_NAME" "$PROXY_SERVICE_INSTALL_DIR/"
+  sed -e "s|__INSTALL_DIR__|${PROXY_SCRIPT_INSTALL_DIR}|g" \
+    -e "s|__SCRIPT_NAME__|${PROXY_SCRIPT_NAME}|g" \
+    "$PROXY_SERVICE_NAME.template" >"$PROXY_SERVICE_INSTALL_DIR/$PROXY_SERVICE_NAME"
   chown root:root "$PROXY_SERVICE_INSTALL_DIR/$PROXY_SERVICE_NAME"
   chmod 644 "$PROXY_SERVICE_INSTALL_DIR/$PROXY_SERVICE_NAME"
   systemctl daemon-reload
@@ -53,7 +54,7 @@ elif [[ "$1" = "server" ]]; then
     echo "Adding cron job..."
     (
       crontab -l 2>/dev/null
-      echo "*/5 * * * * /usr/bin/python3 $SERVER_SCRIPT_INSTALL_DIR/$SERVER_SCRIPT_NAME >> /var/log/mc-regulator.log 2>&1"
+      echo "*/5 * * * * /usr/bin/python3 $SERVER_SCRIPT_INSTALL_DIR/$SERVER_SCRIPT_NAME >> /var/log/mc-server-regulator.log 2>&1"
     ) | crontab -
   else
     echo "Cron job already exists. Skipping."

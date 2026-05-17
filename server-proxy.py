@@ -89,36 +89,36 @@ def login_attempted() -> bool:  # clean up
             s.settimeout(LISTEN_TIMEOUT)
             print("Precise listener active, waiting for a JOIN attempt...", flush=True)
 
-            connection, address = s.accept()
-            print(f"Connection made with {address}!", flush=True)
-            connection.settimeout(5)
-            with connection:
-                try:
-                    socket_stream = connection.makefile("rb")
-                    packet_length = get_vlq_bytes(socket_stream)
-                    packet_data = safe_read(socket_stream, packet_length)
-                    stream_packet_data = io.BytesIO(packet_data)
+            while True:
+                connection, address = s.accept()
+                print(f"Connection made with {address}!", flush=True)
+                connection.settimeout(1)
+                with connection:
+                    try:
+                        socket_stream = connection.makefile("rb")
+                        packet_length = get_vlq_bytes(socket_stream)
+                        packet_data = safe_read(socket_stream, packet_length)
+                        stream_packet_data = io.BytesIO(packet_data)
 
-                    packet_id = get_vlq_bytes(stream_packet_data)
-                    client_protocol = get_vlq_bytes(stream_packet_data)
-                    client_address_length = get_vlq_bytes(stream_packet_data)
-                    client_address = safe_read(
-                        stream_packet_data, client_address_length
-                    )
-                    client_connection_port = safe_read(stream_packet_data, 2)
-                    client_connection_reason = get_vlq_bytes(stream_packet_data)
-                    print(client_connection_reason, flush=True)
-                    if client_connection_reason == 2:
-                        send_disconnect_packet(connection)
-                        print("Disconnect packet sent!", flush=True)
-                        return True
-                except (IOError, OSError) as e:
-                    print(f"Handshake failed early: {e}", flush=True)
-                    return False
+                        packet_id = get_vlq_bytes(stream_packet_data)
+                        client_protocol = get_vlq_bytes(stream_packet_data)
+                        client_address_length = get_vlq_bytes(stream_packet_data)
+                        client_address = safe_read(
+                            stream_packet_data, client_address_length
+                        )
+                        client_connection_port = safe_read(stream_packet_data, 2)
+                        client_connection_reason = get_vlq_bytes(stream_packet_data)
+                        print(client_connection_reason, flush=True)
+                        if client_connection_reason == 2:
+                            send_disconnect_packet(connection)
+                            print("Disconnect packet sent!", flush=True)
+                            return True
+                    except (IOError, OSError) as e:
+                        print(f"Handshake failed early: {e}", flush=True)
+                        return False
         except socket.timeout:
             print("Connection timed out", flush=True)
             return False
-    return False
 
 
 def send_disconnect_packet(conn):

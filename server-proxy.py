@@ -116,9 +116,9 @@ def login_attempted() -> bool:  # clean up
                         connection.close()
                     except (IOError, OSError) as e:
                         print(f"Handshake failed early: {e}", flush=True)
-                        return False
+                        continue
         except socket.timeout:
-            print("Connection timed out", flush=True)
+            print("Socket timed out", flush=True)
             return False
 
 

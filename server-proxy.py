@@ -113,6 +113,7 @@ def login_attempted() -> bool:  # clean up
                             send_disconnect_packet(connection)
                             print("Disconnect packet sent!", flush=True)
                             return True
+                        connection.close()
                     except (IOError, OSError) as e:
                         print(f"Handshake failed early: {e}", flush=True)
                         return False

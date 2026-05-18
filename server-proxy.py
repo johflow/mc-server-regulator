@@ -92,12 +92,12 @@ def login_attempted() -> bool:  # clean up
             while True:
                 connection, address = s.accept()
                 print(f"Connection made with {address}!", flush=True)
-                connection.settimeout(1)
+                connection.settimeout(0.5)
                 with connection:
                     try:
-                        socket_stream = connection.makefile("rb")
-                        packet_length = get_vlq_bytes(socket_stream)
-                        packet_data = safe_read(socket_stream, packet_length)
+                        with connection.makefile("rb") as socket_stream:
+                            packet_length = get_vlq_bytes(socket_stream)
+                            packet_data = safe_read(socket_stream, packet_length)
                         stream_packet_data = io.BytesIO(packet_data)
 
                         packet_id = get_vlq_bytes(stream_packet_data)
@@ -113,8 +113,7 @@ def login_attempted() -> bool:  # clean up
                             send_disconnect_packet(connection)
                             print("Disconnect packet sent!", flush=True)
                             return True
-                        connection.close()
-                    except (IOError, OSError) as e:
+                    except (IOError, OSError, ValueError) as e:
                         print(f"Handshake failed early: {e}", flush=True)
                         continue
         except socket.timeout:

@@ -111,6 +111,9 @@ def login_attempted() -> bool:  # clean up
                         print(client_connection_reason, flush=True)
                         if client_connection_reason == 2:
                             send_disconnect_packet(connection)
+                            print(
+                                f"Server booted from following packet: {packet_id}, {client_protocol}, {client_address}, {client_connection_port}, {client_connection_reason}"
+                            )
                             print("Disconnect packet sent!", flush=True)
                             return True
                     except (IOError, OSError, ValueError) as e:

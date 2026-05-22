@@ -114,14 +114,14 @@ def login_attempted() -> bool:  # clean up
                         client_connection_port = safe_read(stream_packet_data, 2)
                         client_connection_reason = get_vlq_bytes(stream_packet_data)
                         print(client_connection_reason, flush=True)
-                        if client_connection_reason == 2 and is_valid_join_address(
-                            client_address
-                        ):
-                            send_disconnect_packet(connection)
+                        if client_connection_reason == 2:
+                            if is_valid_join_address:
+                                send_disconnect_packet(connection)
+                                print("Disconnect packet sent!", flush=True)
+
                             print(
-                                f"Server booted from following packet: {packet_id}, {client_protocol}, {client_address}, {client_connection_port}, {client_connection_reason}"
+                                f"Server join request from following packet: {packet_id}, {client_protocol}, {client_address}, {client_connection_port}, {client_connection_reason}"
                             )
-                            print("Disconnect packet sent!", flush=True)
                             return True
                     except (IOError, OSError, ValueError) as e:
                         print(f"Handshake failed early: {e}", flush=True)

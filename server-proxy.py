@@ -80,6 +80,11 @@ def get_vlq_bytes(stream):
     return data
 
 
+def is_valid_join_address(address):
+    decoded = address.decode("utf-8", errors="ignore")
+    return "willflowers.me" in decoded
+
+
 def login_attempted() -> bool:  # clean up
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
@@ -109,7 +114,9 @@ def login_attempted() -> bool:  # clean up
                         client_connection_port = safe_read(stream_packet_data, 2)
                         client_connection_reason = get_vlq_bytes(stream_packet_data)
                         print(client_connection_reason, flush=True)
-                        if client_connection_reason == 2:
+                        if client_connection_reason == 2 and is_valid_join_address(
+                            client_address
+                        ):
                             send_disconnect_packet(connection)
                             print(
                                 f"Server booted from following packet: {packet_id}, {client_protocol}, {client_address}, {client_connection_port}, {client_connection_reason}"

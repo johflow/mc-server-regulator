@@ -115,7 +115,7 @@ def login_attempted() -> bool:  # clean up
                         client_connection_reason = get_vlq_bytes(stream_packet_data)
                         print(client_connection_reason, flush=True)
                         if client_connection_reason == 2:
-                            if is_valid_join_address:
+                            if is_valid_join_address(client_address):
                                 send_disconnect_packet(connection)
                                 print("Disconnect packet sent!", flush=True)
 

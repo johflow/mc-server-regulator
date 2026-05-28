@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=__INSTALL_DIR__
+EnvironmentFile=__ENVIRONMENT_FILE_PATH__
 ExecStart=__INSTALL_DIR__/venv/bin/python __INSTALL_DIR__/__SCRIPT_NAME__
 Restart=on-failure
 

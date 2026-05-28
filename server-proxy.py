@@ -1,21 +1,35 @@
 import subprocess
 import time
-import wakeonlan
 import socket
-import sys
 import json
 import io
-import threading
+import os
+import wakeonlan
 
-SERVER_MAC_ADDRESS = "04:7c:16:4d:61:cb"
-SERVER_PORT = 25566
-SERVER_IP = "192.168.1.72"
-PI_IP = "192.168.1.64"
-COOLDOWN_PERIOD = 30
-TIMEOUT_PERIOD = 30
-SERVER_BOOT_PERIOD = 300
-LISTEN_TIMEOUT = 60
-CUSTOM_KICK_MESSAGE = "§eThe server is waking up... §aPlease try again in 2 minutes!"
+
+def get_env_var(
+    key, type: type, default=None
+):  # TODO implement cool env var get function
+    try:
+        return type(os.environ[key])
+    except Exception as e:
+        print(f"Environmental Variable Error: {e}", flush=True)
+        if default:
+            return default
+        exit(1)
+
+
+SERVER_IP = get_env_var("SERVER_IP", str, "192.168.1.72")
+SERVER_DOMAIN = get_env_var("SERVER_DOMAIN", str)
+SERVER_MAC_ADDRESS = get_env_var("SERVER_MAC_ADDRESS", str)
+CUSTOM_KICK_MESSAGE = get_env_var(
+    "CUSTOM_KICK_MESSAGE",
+    str,
+    "§eThe server is waking up... §aPlease try again in 2 minutes!",
+)
+COOLDOWN_PERIOD = get_env_var("COOLDOWN_PERIOD", int, 30)
+SERVER_PORT = get_env_var("SERVER_PORT", int, 25565)
+LISTEN_TIMEOUT = get_env_var("LISTEN_TIMEOUT", int, 60)
 
 
 def add_ip_alias():
@@ -30,13 +44,6 @@ def remove_ip_alias():
 def wake_server():
     wakeonlan.send_magic_packet(SERVER_MAC_ADDRESS)
     print("Sent wake on lan packet.", flush=True)
-
-
-def spoof_server_mac():
-    subprocess.run(["sudo", "ip", "link", "set", "eth0", "down"])
-    subprocess.run(["sudo", "macchanger", "-m", SERVER_MAC_ADDRESS, "eth0"])
-    subprocess.run(["sudo", "ip", "link", "set", "eth0", "up"])
-    print(f"Spoofed MAC address to {SERVER_MAC_ADDRESS}.", flush=True)
 
 
 def server_awake() -> bool:
@@ -82,7 +89,7 @@ def get_vlq_bytes(stream):
 
 def is_valid_join_address(address):
     decoded = address.decode("utf-8", errors="ignore")
-    return "willflowers.me" in decoded
+    return SERVER_DOMAIN in decoded
 
 
 def login_attempted() -> bool:  # clean up
@@ -91,7 +98,7 @@ def login_attempted() -> bool:  # clean up
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(("0.0.0.0", SERVER_PORT))
             s.listen()
-            s.settimeout(LISTEN_TIMEOUT)
+            s.settimeout(int(LISTEN_TIMEOUT))
             print("Precise listener active, waiting for a JOIN attempt...", flush=True)
 
             while True:
@@ -173,7 +180,7 @@ def main():
                 remove_ip_alias()
                 wait_for_server_boot()
             else:
-                time.sleep(COOLDOWN_PERIOD)
+                time.sleep(int(COOLDOWN_PERIOD))
     finally:
         remove_ip_alias()
         print("Exited cleanly.", flush=True)

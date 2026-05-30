@@ -117,6 +117,7 @@ def login_attempted() -> bool:  # clean up
                         if client_connection_reason == 1:
                             send_status_request_packet(connection)
                             connection.shutdown(socket.SHUT_WR)
+                            time.sleep(0.5)
 
                         elif client_connection_reason == 2:
                             print(
@@ -126,6 +127,7 @@ def login_attempted() -> bool:  # clean up
                                 send_disconnect_packet(connection)
                                 print("Disconnect packet sent!", flush=True)
                                 connection.shutdown(socket.SHUT_WR)
+                                time.sleep(0.5)
                                 return True
                     except (IOError, OSError, ValueError) as e:
                         print(f"Handshake failed early: {e}", flush=True)

@@ -114,6 +114,8 @@ def login_attempted() -> bool:  # clean up
                         client_connection_port = safe_read(stream_packet_data, 2)
                         client_connection_reason = get_vlq_bytes(stream_packet_data)
                         print(client_connection_reason, flush=True)
+                        if client_connection_reason == 1:
+                            send_status_request_packet(connection)
                         if client_connection_reason == 2:
                             print(
                                 f"Server join request from following packet: {packet_id}, {client_protocol}, {client_address}, {client_connection_port}, {client_connection_reason}"
@@ -136,6 +138,22 @@ def send_disconnect_packet(conn):
     reason_length = encode_varint(len(reason_bytes))
     packet_id = encode_varint(0x00)
     packet_data = packet_id + reason_length + reason_bytes
+    packet_length = encode_varint(len(packet_data))
+    conn.sendall(packet_length + packet_data)
+
+
+def send_status_request_packet(conn):
+    status = {
+        "version": {"name": "1.21.9", "protocol": 773},
+        "description": {
+            "text": "Server is currently sleeping. Try joining to wake it up."
+        },
+    }
+    status_json = json.dumps(status)
+    status_bytes = status_json.encode("utf-8")
+    status_length = encode_varint(len(status_bytes))
+    packet_id = encode_varint(0x00)
+    packet_data = packet_id + status_length + status_bytes
     packet_length = encode_varint(len(packet_data))
     conn.sendall(packet_length + packet_data)
 

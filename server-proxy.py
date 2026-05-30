@@ -116,13 +116,16 @@ def login_attempted() -> bool:  # clean up
                         print(client_connection_reason, flush=True)
                         if client_connection_reason == 1:
                             send_status_request_packet(connection)
-                        if client_connection_reason == 2:
+                            connection.shutdown(socket.SHUT_WR)
+
+                        elif client_connection_reason == 2:
                             print(
                                 f"Server join request from following packet: {packet_id}, {client_protocol}, {client_address}, {client_connection_port}, {client_connection_reason}"
                             )
                             if is_valid_join_address(client_address):
                                 send_disconnect_packet(connection)
                                 print("Disconnect packet sent!", flush=True)
+                                connection.shutdown(socket.SHUT_WR)
                                 return True
                     except (IOError, OSError, ValueError) as e:
                         print(f"Handshake failed early: {e}", flush=True)

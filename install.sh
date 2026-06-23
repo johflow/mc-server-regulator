@@ -43,6 +43,7 @@ if [[ "$1" = "proxy" ]]; then
   cp "$PROXY_SCRIPT_NAME" "$PROXY_SCRIPT_INSTALL_DIR/"
   chown root:root "$PROXY_SCRIPT_INSTALL_DIR/$PROXY_SCRIPT_NAME"
   chmod 644 "$PROXY_SCRIPT_INSTALL_DIR/$PROXY_SCRIPT_NAME"
+
   python3 -m venv "$PROXY_SCRIPT_INSTALL_DIR/venv"
   "$PROXY_SCRIPT_INSTALL_DIR/venv/bin/pip" install -r requirements.txt
 
@@ -69,6 +70,8 @@ elif [[ "$1" = "server" ]]; then
   mkdir -p "$SERVER_SCRIPT_INSTALL_DIR"
   cp "$SERVER_SCRIPT_NAME" "$SERVER_SCRIPT_INSTALL_DIR/"
   cp "$ENVIRONMENTAL_VARIABLES_FILE" "$SERVER_SCRIPT_INSTALL_DIR"
+  python3 -m venv "$SERVER_SCRIPT_INSTALL_DIR/venv"
+  "$SERVER_SCRIPT_INSTALL_DIR/venv/bin/pip" install -r requirements.txt
   if ! crontab -l 2>/dev/null | grep -q "$SERVER_SCRIPT_NAME"; then
     echo "Adding cron job..."
     (

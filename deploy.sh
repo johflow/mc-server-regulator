@@ -58,6 +58,10 @@ if [[ "$1" = "proxy" ]]; then
 elif [[ "$1" = "server" ]]; then
   echo "Deploying $SERVER_SCRIPT_NAME to $SERVER_SCRIPT_INSTALL_DIR"
   cp "$SERVER_SCRIPT_NAME" "$SERVER_SCRIPT_INSTALL_DIR/"
+  echo "Deploying .env file"
+  cp "$ENVIRONMENTAL_VARIABLES_FILE" "$SERVER_SCRIPT_INSTALL_DIR"
+  chown root:root "$SERVER_SCRIPT_INSTALL_DIR/$ENVIRONMENTAL_VARIABLES_FILE"
+  chmod 600 "$SERVER_SCRIPT_INSTALL_DIR/$ENVIRONMENTAL_VARIABLES_FILE"
   python3 -m venv "$SERVER_SCRIPT_INSTALL_DIR/venv"
   "$SERVER_SCRIPT_INSTALL_DIR/venv/bin/pip" install -r requirements.txt
 fi

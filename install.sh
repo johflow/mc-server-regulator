@@ -79,7 +79,7 @@ elif [[ "$1" = "server" ]]; then
     echo "Adding cron job..."
     (
       crontab -l 2>/dev/null
-      echo "*/5 * * * *  $SERVER_PYTHON_DIR $SERVER_SCRIPT_INSTALL_DIR/$SERVER_SCRIPT_NAME --env $SERVER_SCRIPT_INSTALL_DIR/$ENVIRONMENTAL_VARIABLES_FILE >>  $SERVER_LOG_OUTPUT 2>&1"
+      echo "*/5 * * * *  $SERVER_SCRIPT_INSTALL_DIR/venv/bin/ptyhon $SERVER_SCRIPT_INSTALL_DIR/$SERVER_SCRIPT_NAME --env $SERVER_SCRIPT_INSTALL_DIR/$ENVIRONMENTAL_VARIABLES_FILE >>  $SERVER_LOG_OUTPUT 2>&1"
     ) | crontab -
   else
     echo "Cron job already exists. Skipping."

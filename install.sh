@@ -75,7 +75,7 @@ elif [[ "$1" = "server" ]]; then
   chmod 600 "$SERVER_SCRIPT_INSTALL_DIR/$ENVIRONMENTAL_VARIABLES_FILE"
   python3 -m venv "$SERVER_SCRIPT_INSTALL_DIR/venv"
   "$SERVER_SCRIPT_INSTALL_DIR/venv/bin/pip" install -r requirements.txt
-  if ! crontab -l 2>/dev/null | grep -q "$SERVER_SCRIPT_NAME"; then
+  if ! crontab -l 2>/dev/null | grep -q "$SERVER_SCRIPT_NAME"; then #Consider making more robust checking
     echo "Adding cron job..."
     (
       crontab -l 2>/dev/null

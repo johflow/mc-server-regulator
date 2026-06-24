@@ -7,9 +7,7 @@ import os
 import wakeonlan
 
 
-def get_env_var(
-    key, type: type, default=None
-):  # TODO implement cool env var get function
+def get_env_var(key, type: type, default=None):
     try:
         return type(os.environ[key])
     except Exception as e:
@@ -167,7 +165,12 @@ def wait_for_server_boot():  # Fix magic numbers
         time.sleep(5)
 
 
+def satisy_preconditions():
+    remove_ip_alias()
+
+
 def main():
+    satisy_preconditions()
     try:
         while True:
             if not server_awake():
@@ -180,7 +183,7 @@ def main():
                 remove_ip_alias()
                 wait_for_server_boot()
             else:
-                time.sleep(int(COOLDOWN_PERIOD))
+                time.sleep(COOLDOWN_PERIOD)
     finally:
         remove_ip_alias()
         print("Exited cleanly.", flush=True)
